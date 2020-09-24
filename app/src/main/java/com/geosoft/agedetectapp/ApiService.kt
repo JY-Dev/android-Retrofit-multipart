@@ -9,5 +9,5 @@ import retrofit2.http.Part
 interface ApiService {
     @Multipart
     @POST("/")
-    fun getAge(@Part image : MultipartBody.Part) : Call<ResponseData>
+    fun getAge(@Part data : MultipartBody.Part) : Call<ResponseData>
 }

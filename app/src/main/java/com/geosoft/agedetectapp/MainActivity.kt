@@ -7,6 +7,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.gun0912.tedpermission.PermissionListener
@@ -35,22 +36,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun reqAge(){
-        println("testtest")
-        val test = File(getRealPathFromURI(cameraUtil.getImageUri()?: Uri.EMPTY))
-        val requestFile = RequestBody.create(MediaType.parse("multipart/form-data"),test)
-        val body = MultipartBody.Part.createFormData("image",test.name,requestFile)
+    private fun reqAge(file: File){
+        val requestFile = RequestBody.create(MediaType.parse("multipart/form-data"),file)
+        val body = MultipartBody.Part.createFormData("data",file.name,requestFile)
         ApiClient.getRetrofit()?.create(ApiService::class.java)?.getAge(body)?.enqueue(object: retrofit2.Callback<ResponseData>{
             override fun onFailure(call: Call<ResponseData>, t: Throwable) {
                 t.printStackTrace()
+                setProgress()
             }
 
             override fun onResponse(call: Call<ResponseData>, response: Response<ResponseData>) {
-                println("test="+response.body()?.output)
+                runOnUiThread {
+                    age_tv.text = response.body()?.output
+                    setProgress()
+                }
+
             }
 
         })
     }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if(resultCode != RESULT_OK) return
@@ -58,12 +63,12 @@ class MainActivity : AppCompatActivity() {
             cameraUtil.REQUEST_TAKE_PHOTO -> {
                 if (resultCode == Activity.RESULT_OK) {
                     try {
-                        cameraUtil.galleryAddPic()
-                        image.setImageURI(cameraUtil.getImageUri())
                         permission {
-                            reqAge()
-                        }
+                            setProgress()
+                            reqAge( cameraUtil.galleryAddPic())
+                            image.setImageURI(cameraUtil.getImageUri())
 
+                        }
                     } catch (e: Exception) {
                     }
 
@@ -75,10 +80,12 @@ class MainActivity : AppCompatActivity() {
                 if (resultCode == Activity.RESULT_OK) {
                     if (data?.data != null) {
                         try {
+                            setProgress()
                             cameraUtil.setImageUri(data.data)
                             image.setImageURI(cameraUtil.getImageUri())
+
                             permission {
-                                reqAge()
+                                reqAge(File(getRealPathFromURI(cameraUtil.getImageUri()?: Uri.EMPTY)))
                             }
                         } catch (e: Exception) {
                         }
@@ -95,7 +102,7 @@ class MainActivity : AppCompatActivity() {
         val proj = arrayOf(MediaStore.Images.Media.DATA)
         val cursor: Cursor? = contentResolver.query(contentUri, proj, null, null, null)
         cursor?.moveToNext()
-        val path: String = cursor?.getString(cursor.getColumnIndex(MediaStore.MediaColumns.DATA))?:""
+        val path: String = cursor?.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))?:""
         val uri: Uri = Uri.fromFile(File(path))
         cursor?.close()
         return path
@@ -119,4 +126,10 @@ class MainActivity : AppCompatActivity() {
             .check()
     }
 
+    private fun setProgress(){
+        when(progress.visibility){
+            View.GONE -> progress.visibility = View.VISIBLE
+            View.VISIBLE -> progress.visibility = View.GONE
+        }
+    }
 }

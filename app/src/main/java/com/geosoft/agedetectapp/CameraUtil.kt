@@ -25,7 +25,6 @@ class CameraUtil(context: Context) {
     private lateinit var mCurrentPhotoPath: String
     private var imageUri: Uri? = null
     private val activity = mContext as Activity
-    lateinit var f:File
 
     private fun permission(func : () -> Unit){
         val permissionListener = object : PermissionListener {
@@ -45,16 +44,17 @@ class CameraUtil(context: Context) {
             .check()
     }
 
-    fun galleryAddPic() {
+    fun galleryAddPic() :File{
+        val file = File(mCurrentPhotoPath)
         permission {
             val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
             // 해당 경로에 있는 파일을 객체화(새로 파일을 만든다는 것으로 이해하면 안 됨)
-            f = File(mCurrentPhotoPath)
-            val contentUri = Uri.fromFile(f)
+            val contentUri = Uri.fromFile(file)
             mediaScanIntent.data = contentUri
             activity.sendBroadcast(mediaScanIntent)
             Toast.makeText(mContext, "사진 등록 완료", Toast.LENGTH_SHORT).show()
         }
+        return file
     }
 
     fun getAlbum() {
